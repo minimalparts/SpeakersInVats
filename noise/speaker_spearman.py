@@ -3,7 +3,7 @@
 #argv[2]: space dm file 2
 #argv[3]: MEN file
 #argv[4]: num dim for SVD
-#EXAMPLE: python spearman.py wiki.S1.dm wiki.S2.dm MEN_dataset_natural_form_full 50
+#EXAMPLE: python spearman.py wiki.S1.dm wiki.S2.dm 50
 #-------
 from composes.utils import io_utils
 from composes.semantic_space.space import Space
@@ -55,3 +55,6 @@ def run_spearman(s1,s2,num_svd_dims):
     sp = scoring_utils.score(predicted1, predicted2, "spearman")
     print "Spearman",sp
     return sp
+
+if __name__=="__main__":
+    run_spearman(sys.argv[1],sys.argv[2],int(sys.argv[3]))

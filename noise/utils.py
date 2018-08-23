@@ -4,7 +4,10 @@ import numpy as np
 
 def get_rand_freq(word_freqs):
     '''Return a random frequency out of vocabulary'''
-    return word_freqs[random.choice(word_freqs.keys())]
+    freq = 0.0
+    while freq == 0.0:
+        freq = word_freqs[random.choice(word_freqs.keys())]
+    return freq
 
 def get_rand_int_vec(dim,max_sum):
     print dim,max_sum
@@ -14,7 +17,7 @@ def get_rand_int_vec(dim,max_sum):
 
 def compute_freq_diff(fo,new):
     fn = new.sum()
-    print fo, fn
+    print "FO",fo, "FN",fn
     diff = float(fn) / float(fo)
     return diff
 

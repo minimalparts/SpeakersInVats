@@ -2,6 +2,7 @@
 
 Usage:
 noise.py <file_in> <file_out> random_reset (--dense|--sparse) --from=NUM --to=NUM <num_vec_perturbed>
+noise.py <file_in> <file_out> specific_reset (--dense|--sparse) <word>
 noise.py <file_in> <file_out> linear_reset --from=NUM --to=NUM <n> <num_vec_perturbed>
 noise.py <file_in> <file_out> exponential_reset --from=NUM --to=NUM <n> <num_vec_perturbed>
 noise.py <file_in> <file_out> shuffled_reset --from=NUM --to=NUM <num_vec_perturbed>
@@ -35,7 +36,7 @@ def get_random_word_in_range(word_freqs,begin,end):
 
 
 def get_dense_random(original, word_freqs):
-    #print "ORIGINAL",original[:10], original.sum()
+    print "ORIGINAL",original[:10], original.sum()
     random_freq = utils.get_rand_freq(word_freqs)
     freq_remainder = random_freq - sum(original[i] for i in fixed[:-1])	#Last element in fixed is current word
     while freq_remainder < 0:			#Rejection sampling: there should be a remainder to play with!!
@@ -89,34 +90,29 @@ def get_shuffled_perturbation(original):
 def get_minimal_perturbation(original):
     print "ORIGINAL",original[:10], original.sum()
     new_linear = original.copy()
-    #perc = random.randint(80,120)
-    add = random.randint(-5,5)
+    perc = random.randint(80,120)
+    #add = random.randint(-5,5)
     c = 0
     for i in range(len(new_linear)):
         if i not in fixed[:-1]:
-            #new_linear[i] = int(perc * original[i] / 100)
-            new_linear[i] = max(0,original[i]+add)
+            new_linear[i] = int(perc * original[i] / 100)
+            #new_linear[i] = max(0,original[i]+add)
             c+=1
     return np.array(new_linear)
 
 
 def get_realistic_perturbation(original):
-    #print "ORIGINAL",original[:10], original.sum()
-    zeros = utils.get_zero_positions(original)
-    fixed_zeros = list(set(zeros+fixed[:-1]))		
-    random_freq = int(original.sum() * random.randint(90,110) / 100)
-    freq_remainder = random_freq - sum(original[i] for i in fixed_zeros[:-1])	#Last element in fixed is current word
-    while freq_remainder < 0:			#Rejection sampling: there should be a remainder to play with!!
-        random_freq = utils.get_rand_freq(word_freqs)
-        freq_remainder = random_freq - sum(original[i] for i in fixed_zeros[:-1])	#Last element in fixed is current word
-    random_remainder = utils.get_rand_int_vec(len(original)-len(fixed_zeros),freq_remainder)
-    new_random = original.copy()
+    print "ORIGINAL",original[:10], original.sum()
+    new_vec = original.copy()
+    perc = random.randint(95,105)
+    add = np.random.choice([0,1],p=[0.99,0.01])
     c = 0
-    for i in range(len(new_random)):
-        if i not in fixed_zeros:
-            new_random[i] = random_remainder[c]
+    for i in range(len(new_vec)):
+        if i not in fixed[:-1]:
+            new_vec[i] = int(perc * original[i] / 100)
+            new_vec[i] = max(0,new_vec[i]+add)
             c+=1
-    return np.array(new_random)
+    return np.array(new_vec)
 
 
 def get_linear_perturbation(original,n):
@@ -147,6 +143,19 @@ def reset_word(dm_mat,word,new_random):
     dm_mat = dm_mat.T
     return dm_mat
 
+
+def specific_reset(dm_mat,dense,word,word_freqs):
+    freq_diffs=[]
+    original = dm_mat[word_to_i[word]]
+    if dense:
+        new_random = get_dense_random(original, word_freqs)
+        freq_diffs.append(utils.compute_freq_diff(word_freqs[word],new_random))
+    else:
+        new_random = get_sparse_random(original, word_freqs)
+        freq_diffs.append(utils.compute_freq_diff(word_freqs[word],new_random))
+    dm_mat = reset_word(dm_mat,word,new_random)
+    #print dm_mat
+    return dm_mat, freq_diffs
 
 def random_reset(dm_mat,dense,fromint,toint,num_vec, word_freqs):
     freq_diffs=[]
@@ -198,15 +207,13 @@ def exponential_reset(dm_mat, fromint, toint, num_vec, n, word_freqs):
 
 
 def make_speaker(dm_mat):
-    sliced = dict(sorted(word_freqs.iteritems(), key=operator.itemgetter(1), reverse=True)[50:])
-    #sliced = dict(sorted(word_freqs.iteritems(), key=operator.itemgetter(1), reverse=True))
+    #sliced = dict(sorted(word_freqs.iteritems(), key=operator.itemgetter(1), reverse=True)[50:])
+    sliced = dict(sorted(word_freqs.iteritems(), key=operator.itemgetter(1), reverse=True))
     c=0
     for w,f in sliced.items():
         print "CHANGING",w
         original = dm_mat[word_to_i[w]]
         new_random = get_realistic_perturbation(original)
-        #new_random = get_minimal_perturbation(original)
-        #new_random = get_shuffled_perturbation(original)
         dm_mat = reset_word(dm_mat,w,new_random)
         c+=1
     print "CHANGED",c,"ITEMS"
@@ -242,6 +249,8 @@ if __name__=="__main__":
                 test_speaker, diffs = linear_reset(dm_mat_ref,int(args["--from"]),int(args["--to"]),int(args["<num_vec_perturbed>"]), float(args["<n>"]), word_freqs)
             if args["exponential_reset"]:
                 test_speaker, diffs = exponential_reset(dm_mat_ref,int(args["--from"]),int(args["--to"]),int(args["<num_vec_perturbed>"]), float(args["<n>"]), word_freqs)
+            if args["specific_reset"]:
+                test_speaker, diffs = specific_reset(dm_mat_ref, args["--dense"], args["<word>"], word_freqs)
             means.append(np.mean(np.array(diffs)))
             stds.append(np.std(np.array(diffs)))
             utils.printDM(test_speaker,args["<file_out>"], i_to_word)

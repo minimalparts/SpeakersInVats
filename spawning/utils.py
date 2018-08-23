@@ -26,17 +26,26 @@ def get_zero_positions(vec):
             zeros.append(i)
     return zeros
 
-def fix_vec_freq(vec,diff,up):
-    '''Get vec to correct frequency'''
-    for i in range(diff):
-        position = random.randint(0,len(vec)-1)
-        if up:
-             vec[position]+=1
-        else:
-             while vec[position]==0:			#Super-hack
-                 position+=1
-             vec[position]-=1
-    return vec
+def largest_indices(ary, n):
+    """Returns the n largest indices from a numpy array."""
+    flat = ary.flatten()
+    indices = np.argpartition(flat, -n)[-n:]
+    indices = indices[np.argsort(-flat[indices])]
+    return np.unravel_index(indices, ary.shape)
+
+def total_freq(word_freqs):
+   '''Return total number of words heard for that speaker'''
+   tot = 0
+   for w,f in word_freqs.items():
+       tot+=f
+   return tot
+
+def init_int_list(dim):
+    ints = []
+    for c in range(dim):
+        ints.append(c)
+    return ints
+    
 
 def readDM(infile):
     '''Read dm file'''
