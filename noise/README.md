@@ -1,6 +1,6 @@
 # Perturbation code
 
-The code in this folder applies some perturbation to a reference matrix and computes the effect of that perturbation on a representational similarity dataset (MEN, [Bruni et al](https://staff.fnwi.uva.nl/e.bruni/MEN.)).
+The code in this folder applies some perturbation to a reference matrix and computes the effect of that perturbation on a representational similarity dataset (MEN, [Bruni et al (2014)](https://staff.fnwi.uva.nl/e.bruni/MEN)).
 
 ## Run the code
 
@@ -21,7 +21,7 @@ To run the code, several hyperparameters must be provided. The first one is the 
 
 An example usage might be:
 
-   python noise.py ../spaces/wiki.1M.dm tmp random_reset --dense --from=100 --to=200 5
+    python noise.py ../spaces/wiki.1M.dm tmp random_reset --dense --from=100 --to=200 5
 
 This would call the code on the raw frequency matrix in *../spaces/wiki.1M.dm*, and output the modified vectors to *tmp*. The perturbation applied is *random_reset*, applied in a dense fashion (the zeros in the vector may be perturbed). 5 words are randomly chosen in the frequency range 100-200 (where 100 and 200 are the ranks of the words in the precompiled frequency list: so the 100th and 200th most frequent words).
 
