@@ -31,7 +31,7 @@ def mk_vat(args,vocab,speakers,vat_dir):
     print_vocab(vocab,vat_dir+'/'+new_dir+'/vocab.txt')
     print_dict(args,vat_dir+'/'+new_dir+'/settings.txt')
     shutil.make_archive(vat_dir+'/'+new_dir,'zip',vat_dir,new_dir)
-    shutil.rmtree(vat_dir)
+    shutil.rmtree(vat_dir+'/'+new_dir)
     
 
 def get_realistic_perturbation(original,frozen):
