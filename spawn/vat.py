@@ -1,7 +1,7 @@
 """Create speakers by adding noise to a reference matrix
 
 Usage:
-vat.py <file_in> <dimensionality> <num_speakers>
+vat.py <file_in> <dimensionality> <num_speakers> --perturbation=<type>
 vat.py --version
 
 Options:
@@ -10,7 +10,7 @@ Options:
 """
 
 import os
-import MEN
+import evals
 import sys
 import random
 import numpy as np
@@ -71,10 +71,10 @@ def make_speaker(m,vocab,dim):
     ref_speaker_proc = process_matrix(ref_speaker,dim)
     test_speaker_proc = process_matrix(test_speaker,dim)
 
-    between_speakers = 0.0
-    sp1_men = MEN.compute_spearman(ref_speaker_proc,vocab)[0]
-    sp2_men = MEN.compute_spearman(test_speaker_proc,vocab)[0]
-    return test_speaker,between_speakers,sp1_men,sp2_men
+    #between_speakers = evals.RSA(ref_speaker_proc,test_speaker_proc)[0]
+    sp1_men = evals.compute_men_spearman(ref_speaker_proc,vocab)[0]
+    sp2_men = evals.compute_men_spearman(test_speaker_proc,vocab)[0]
+    return test_speaker_proc, sp1_men, sp2_men
 
 
 if __name__=="__main__":
@@ -87,23 +87,23 @@ if __name__=="__main__":
         os.makedirs(vat_dir)
 
     speakers=[]
-    all_between_speakers = []
     all_sp1_men = []
     all_sp2_men = []
 
 
 
     for i in range(int(args["<num_speakers>"])):
+        print("Making speaker",i,"...")
         ref_speaker = np.copy(m)
-        test_speaker, between_speakers, sp1_men, sp2_men = make_speaker(ref_speaker,vocab,dimensionality)
-        all_between_speakers.append(between_speakers)
+        test_speaker, sp1_men, sp2_men = make_speaker(ref_speaker,vocab,dimensionality)
         all_sp1_men.append(sp1_men)
         all_sp2_men.append(sp2_men)
 
-        print("SPEARMAN REF/TEST",between_speakers)
-        print("SPEARMAN REF",sp1_men)
-        print("SPEARMAN TEST",sp2_men)
+        print("SPEARMAN MEN REF",sp1_men)
+        print("SPEARMAN MEN SPAWNED",sp2_men)
         speakers.append(test_speaker)
         
-
     mk_vat(args,vocab,speakers,vat_dir)
+
+    print("\n\nMEAN SPEARMAN MEN REF:",sum(all_sp1_men)/len(all_sp1_men))
+    print("MEAN SPEARMAN MEN SPAWNED:",sum(all_sp2_men)/len(all_sp2_men))
