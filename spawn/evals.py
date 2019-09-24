@@ -17,7 +17,6 @@ def compute_men_spearman(m,vocab):
             cos = 1 - distance.cosine(m[vocab.index(w1)],m[vocab.index(w2)])
             system.append(cos)
             gold.append(score)
-            #print(w1,w2,cos,score)
     f.close()
 
     #print(len(gold),"pairs considered...")

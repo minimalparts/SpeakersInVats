@@ -5,6 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.decomposition import TruncatedSVD
 from sklearn import preprocessing
 from scipy import linalg as LA
+from os.path import join
 import numpy as np
 
 
@@ -82,6 +83,8 @@ def compute_truncated_SVD(m,dim):
     tsvd.fit(m) 
     return tsvd.transform(m)
 
+
+
 def read_external_vectors(vector_file):
     vocab = []
     vectors = []
@@ -139,3 +142,11 @@ def print_dict(d,outfile):
         line = str(k)+' '+str(v)+'\n'
         f.write(line)
     f.close()
+
+def print_list(l,outfile):
+    f = open(outfile,'w')
+    for v in l:
+        f.write(str(v)+'\n')
+    f.close()
+
+
