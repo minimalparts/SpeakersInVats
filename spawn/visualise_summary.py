@@ -16,8 +16,8 @@ def get_cmap():
     return cmap
 
 
-def unpack(f):
-    shutil.unpack_archive(f, extract_dir="./allvats")
+def unpack(f,vatdir):
+    shutil.unpack_archive(f, extract_dir=vatdir)
 
 
 def read_params(d):
@@ -43,20 +43,20 @@ def draw_correlations(rsa_to_control, corr_to_men, values):
     for i in range(len(rsa_to_control)):
         color+=1
         plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(color))
-        plt.annotate(values[i], xy=(rsa_to_control[i][0], corr_to_men[i][0]), xytext=(-5, 10), textcoords='offset points', color='black', size=10)
+        plt.annotate(values[i], xy=(rsa_to_control[i][0], corr_to_men[i][0]), xytext=(0, 10), textcoords='offset points', color='black', size=10)
     plt.show()
         
 
-def get_speaker_data():
+def get_speaker_data(vatdir):
     speakers = []
     rsa_to_control = []
     corr_to_men = []
     values = []
-    speaker_files = [join("./allvats",f) for f in listdir("./allvats")]
+    speaker_files = [join(vatdir,f) for f in listdir(vatdir)]
     for sfile in speaker_files:
         print("Processing",sfile,"...")
     
-        unpack(sfile)
+        unpack(sfile,vatdir)
         vat = sfile.replace(".zip","")
         values.append(read_params(vat))
 
@@ -67,6 +67,8 @@ def get_speaker_data():
         shutil.rmtree(vat)
     return speakers, rsa_to_control, corr_to_men, values
 
-speakers, rsa_to_control, corr_to_men, values = get_speaker_data()
+vatdir = sys.argv[1]
+
+speakers, rsa_to_control, corr_to_men, values = get_speaker_data(vatdir)
 draw_correlations(rsa_to_control, corr_to_men, values)
 

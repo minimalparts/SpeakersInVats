@@ -6,21 +6,37 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn import preprocessing
 from scipy import linalg as LA
 from os.path import join
+from math import log
 import numpy as np
 
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
-def get_rand_freq(word_freqs):
-    '''Return a random frequency out of vocabulary'''
+def get_rand_freq(word_freqs,min_freq):
+    '''Return a random frequency out of vocabulary -- following zipf'''
     freq = 0.0
+    freqs = [ v for k,v in word_freqs.items() if v >= min_freq ]
+    print(max(word_freqs.values()),min_freq,freqs[:10])
     while freq == 0.0:
-        freq = word_freqs[random.choice(word_freqs.keys())]
+        freq = random.choice(freqs)
     return freq
 
-def get_rand_int_vec(dim,max_sum):
-    print(dim,max_sum)
-    r = [random.random() for i in range(dim)]
-    r = [round(max_sum*i/sum(r)) for i in r]
-    return r
+def get_rand_ints_with_sum(length,total):
+    v = np.zeros(length)
+    remainder = total
+    position = 0
+    while remainder > 0:
+        r = random.randint(0, remainder)
+        v[position]+=r
+        remainder -= r
+        position+=1
+        if position == len(v):
+            position = 0
+    return v
 
 def compute_freq_diff(fo,new):
     fn = new.sum()
@@ -68,7 +84,11 @@ def ppmi(m):
     row_sums = np.sum(m, axis=1)
     for i in range(m.shape[0]):
         for j in range(m.shape[1]):
-            ppmi_matrix[i][j] = max(0, m[i][j] * N / (row_sums[i] * row_sums[j]))
+            if row_sums[i] == 0 or row_sums[j] == 0:
+                print("WARNING: encountered zero vector.")
+                ppmi_matrix[i][j] = 0
+            else:
+                ppmi_matrix[i][j] = max(0, m[i][j] * N / (row_sums[i] * row_sums[j]))
     return ppmi_matrix
 
 def compute_PCA(m,dim):
@@ -84,6 +104,20 @@ def compute_truncated_SVD(m,dim):
     return tsvd.transform(m)
 
 
+def get_vocab_ranked_logs(m,vocab):
+    freqs = {}
+    for w in vocab:
+        freq = np.sum(m[vocab.index(w)])
+        freqs[w] = freq
+    c = 1
+    log_ranks = []
+    log_freqs = []
+    for w in sorted(freqs, key=freqs.get, reverse=True):
+        log_ranks.append(log(c))
+        log_freqs.append(log(freqs[w]))
+        c+=1
+    return log_ranks, log_freqs
+
 
 def read_external_vectors(vector_file):
     vocab = []
@@ -98,26 +132,6 @@ def read_external_vectors(vector_file):
         vectors.append(vec)
     m = np.array(vectors)
     return m, vocab
-
-def read_reference_vectors(vector_file):
-    word_freqs = {}
-    word_vars = {}
-    vocab = []
-    vectors = []
-    with open(vector_file) as f:
-        dmlines=f.read().splitlines()
-    for l in dmlines:
-        items=l.split()
-        target = items[0]
-        vocab.append(target)
-        vec = np.array([float(i) for i in items[1:]])
-        word_freqs[target] = int(vec.sum())
-        word_vars[target] = int(round(np.var(vec)))
-        vectors.append(vec)
-        if np.sum(vec) == 0:
-           print("WARNING",target,"HAS 0 SUM")
-    m = np.array(vectors)
-    return vocab, m, word_freqs, word_vars
 
 
 def print_matrix(dm_mat,vocab,outfile):
@@ -149,4 +163,29 @@ def print_list(l,outfile):
         f.write(str(v)+'\n')
     f.close()
 
+def print_list_pair(l1,l2,outfile):
+    f = open(outfile,'w')
+    for i in range(len(l1)):
+        f.write(str(l1[i])+' '+str(l2[i])+'\n')
+    f.close()
+
+def read_params(infile):
+    d = {}
+    f = open(infile)
+    for l in f:
+        l = l.rstrip('\n')
+        fields = l.split()
+        d[fields[0]] = fields[1]
+    return d
+
+def read_ranked_freqs(infile):
+    l1 = []
+    l2 = []
+    f = open(infile)
+    for l in f:
+        l = l.rstrip('\n')
+        fields = l.split()
+        l1.append(float(fields[0]))
+        l2.append(float(fields[1]))
+    return l1,l2
 
