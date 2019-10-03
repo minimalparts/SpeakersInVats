@@ -1,7 +1,7 @@
 """Create speakers by adding noise to a reference matrix
 
 Usage:
-vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value>
+vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> [--locus=<n>]
 vat.py --version
 
 Options:
@@ -16,7 +16,7 @@ import random
 import numpy as np
 from os.path import join
 import perturbations
-from utils import is_number,read_external_vectors,ppmi,normalise_l2,compute_PCA,print_matrix, print_vocab, print_dict, print_list, print_list_pair,get_rand_freq, get_vocab_ranked_logs
+from utils import is_number,read_external_vectors,ppmi,normalise_l2,compute_PCA,print_matrix, print_vocab, print_dict, print_list, print_list_pair,get_rand_freq, get_vocab_ranked_logs, get_vocab_freqs, percentile
 from docopt import docopt
 import shutil
 
@@ -61,11 +61,20 @@ def process_matrix(m,dim):
     m = compute_PCA(m,dim)
     return m
 
-def make_speaker(m,vocab,dim,pert,param):
+def make_speaker(m,vocab,dim,pert,param,locus=None):
     frozen= []
+    print("Percentile:",locus)
     ref_speaker = np.copy(m)
     test_speaker = np.copy(m)
-    indices = list(range(test_speaker.shape[0]))
+    if locus == None:
+        indices = list(range(test_speaker.shape[0]))
+    elif isinstance(locus,int):
+        freqs = np.array(get_vocab_freqs(m,vocab))
+        indices = percentile(freqs,locus)
+        print(indices)
+    else:
+        print("Error, locus is not an int. Aborting speaker.")
+        return 
     random.shuffle(indices)
     for i in indices:
         original = test_speaker[i]
@@ -100,6 +109,10 @@ if __name__=="__main__":
     m, vocab = read_external_vectors(args["--in"])
     dimensionality = int(args["--dim"])
     pert = args["--perturbation"]
+    if args["--locus"]:
+        locus = int(args["--locus"])
+    else:
+        locus = None
     if is_number(args["--v"]):
         param = float(args["--v"])
     else:
@@ -119,7 +132,7 @@ if __name__=="__main__":
     for i in range(int(args["--num_speakers"])):
         print("Making speaker",i,"...")
         ref_speaker = np.copy(m)
-        test_speaker, ref_to_test, sp1_men, sp2_men, ranked = make_speaker(ref_speaker,vocab,dimensionality,pert,param)
+        test_speaker, ref_to_test, sp1_men, sp2_men, ranked = make_speaker(ref_speaker,vocab,dimensionality,pert,param,locus=locus)
         all_ref_to_test.append(ref_to_test)
         all_sp1_men.append(sp1_men)
         all_sp2_men.append(sp2_men)

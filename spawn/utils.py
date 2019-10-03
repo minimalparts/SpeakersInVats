@@ -38,6 +38,14 @@ def get_rand_ints_with_sum(length,total):
             position = 0
     return v
 
+def percentile(freqs,n):
+    percentiles = []
+    for i in range(10,100,10):
+        percentiles.append(np.percentile(freqs,i))
+    freqs_binned_indices = np.digitize(freqs, percentiles)
+    indices = [i for i, e in enumerate(freqs_binned_indices) if e == n]
+    return indices
+
 def compute_freq_diff(fo,new):
     fn = new.sum()
     print("FO",fo, "FN",fn)
@@ -118,6 +126,12 @@ def get_vocab_ranked_logs(m,vocab):
         c+=1
     return log_ranks, log_freqs
 
+def get_vocab_freqs(m,vocab):
+    freqs = []
+    for w in vocab:
+        freq = np.sum(m[vocab.index(w)])
+        freqs.append(freq)
+    return freqs
 
 def read_external_vectors(vector_file):
     vocab = []
