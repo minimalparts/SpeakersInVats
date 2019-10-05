@@ -21,13 +21,17 @@ def unpack(f,vatdir):
 
 
 def read_params(d):
+    value = 0.0
+    locus = None
     f = open(join(d,"settings.txt"))
     for l in f:
         l = l.rstrip('\n')
         print(l)
         if l[:4] == '--v ':
             value = l.split()[1]
-    return value
+        if l[:8] == '--locus ':
+            locus = l.split()[1]
+    return value, locus
 
 def draw_matrices(matrices):
     cmap = get_cmap()
@@ -37,13 +41,22 @@ def draw_matrices(matrices):
         plt.plot(m[:,0],m[:,1],'o',color=cmap(color))
     plt.show()
 
-def draw_correlations(rsa_to_control, corr_to_men, values):
+def draw_correlations(rsa_to_control, corr_to_men, values, loci):
+    fig,ax = plt.subplots()
     cmap = get_cmap()
     color=0
     for i in range(len(rsa_to_control)):
-        color+=1
-        plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(color))
+        if loci[i] != '9': #or float(values[i]) > 1.3:
+            continue
+        if loci[0] == None:
+            color+=1
+            plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(color))
+        else:
+            plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(int(loci[i])))
+            
         plt.annotate(values[i], xy=(rsa_to_control[i][0], corr_to_men[i][0]), xytext=(0, 10), textcoords='offset points', color='black', size=10)
+    ax.set_xlabel('RSA to control')
+    ax.set_ylabel('Spearman to MEN')
     plt.show()
         
 
@@ -52,23 +65,26 @@ def get_speaker_data(vatdir):
     rsa_to_control = []
     corr_to_men = []
     values = []
+    loci = []
     speaker_files = [join(vatdir,f) for f in listdir(vatdir)]
     for sfile in speaker_files:
         print("Processing",sfile,"...")
     
         unpack(sfile,vatdir)
         vat = sfile.replace(".zip","")
-        values.append(read_params(vat))
+        value,locus = read_params(vat)
+        values.append(value)
+        loci.append(locus)
 
         #speakers.append(np.load(join(vat,"rsa.2d.npy")))
         rsa_to_control.append(np.load(join(vat,"rsa.ref.test.npy")))
         corr_to_men.append(np.load(join(vat,"corr.men.npy")))
  
         shutil.rmtree(vat)
-    return speakers, rsa_to_control, corr_to_men, values
+    return speakers, rsa_to_control, corr_to_men, values, loci
 
 vatdir = sys.argv[1]
 
-speakers, rsa_to_control, corr_to_men, values = get_speaker_data(vatdir)
-draw_correlations(rsa_to_control, corr_to_men, values)
+speakers, rsa_to_control, corr_to_men, values, loci = get_speaker_data(vatdir)
+draw_correlations(rsa_to_control, corr_to_men, values, loci)
 
