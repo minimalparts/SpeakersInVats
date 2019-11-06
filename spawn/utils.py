@@ -38,6 +38,15 @@ def get_rand_ints_with_sum(length,total):
             position = 0
     return v
 
+def centroid(vectors):
+    '''vectors is a list of np arrays'''
+    m = np.array(vectors)
+    return np.mean(m,axis=0)
+
+def matrix_distance(m1,m2):
+    return np.sum(np.absolute(m1 - m2))
+
+
 def percentile(freqs,n):
     percentiles = []
     for i in range(10,100,10):

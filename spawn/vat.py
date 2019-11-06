@@ -1,7 +1,9 @@
 """Create speakers by adding noise to a reference matrix
 
 Usage:
-vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> [--locus=<n>]
+vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value>
+vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> --locus=<n>
+vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> --num=<n> --locus=<n>
 vat.py --version
 
 Options:
@@ -61,7 +63,7 @@ def process_matrix(m,dim):
     m = compute_PCA(m,dim)
     return m
 
-def make_speaker(m,vocab,dim,pert,param,locus=None):
+def make_speaker(m,vocab,dim,pert,param,locus=None,n=None):
     frozen= []
     print("Percentile:",locus)
     ref_speaker = np.copy(m)
@@ -71,6 +73,8 @@ def make_speaker(m,vocab,dim,pert,param,locus=None):
     elif isinstance(locus,int):
         freqs = np.array(get_vocab_freqs(m,vocab))
         indices = percentile(freqs,locus)
+        if isinstance(n,int):
+           indices = [random.choice(indices) for c in range(n)] 
         print(indices)
     else:
         print("Error, locus is not an int. Aborting speaker.")
@@ -113,6 +117,10 @@ if __name__=="__main__":
         locus = int(args["--locus"])
     else:
         locus = None
+    if args["--num"]:
+        num_perturbations = int(args["--num"])
+    else:
+        num_perturbations = args["--num"]
     if is_number(args["--v"]):
         param = float(args["--v"])
     else:
@@ -132,7 +140,7 @@ if __name__=="__main__":
     for i in range(int(args["--num_speakers"])):
         print("Making speaker",i,"...")
         ref_speaker = np.copy(m)
-        test_speaker, ref_to_test, sp1_men, sp2_men, ranked = make_speaker(ref_speaker,vocab,dimensionality,pert,param,locus=locus)
+        test_speaker, ref_to_test, sp1_men, sp2_men, ranked = make_speaker(ref_speaker,vocab,dimensionality,pert,param,locus=locus,n=num_perturbations)
         all_ref_to_test.append(ref_to_test)
         all_sp1_men.append(sp1_men)
         all_sp2_men.append(sp2_men)
