@@ -38,5 +38,5 @@ def compute_cosines(m):
 def compute_nearest_neighbours(cosines,word_indices,i):
     word_cos = np.array(cosines[i])
     ranking = np.argsort(-word_cos)
-    neighbours = [(word_indices[n], round(word_cos[n],5)) for n in ranking][:10]
+    neighbours = [(word_indices[n], round(word_cos[n],5)) for n in ranking][:5]
     return neighbours

@@ -16,15 +16,28 @@ import random
 from docopt import docopt
 from os import listdir
 from os.path import isfile, join
+import matplotlib.pyplot as plt
 from utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, matrix_distance, get_vocab_freqs, percentile
 from evals import RSA, compute_cosines, compute_nearest_neighbours
-from transformations import center, stretch
+from transformations import center, stretch, rotate
 
 np.random.seed(0)
 
 def unpack(f,vatdir):
     shutil.unpack_archive(f, extract_dir=vatdir)
 
+def make_figure(m, words):
+    n = int(m.shape[0] / 3)
+    plt.plot(m[:n, 0], m[:n, 1], 'o-', label = 'control', color='red')
+    for i in range(len(words)):
+        plt.annotate(words[i], xy=(m[i][0], m[i][1]), xytext=(-5, 10), textcoords='offset points', color='red', size=10)
+    plt.plot(m[n:n*2, 0], m[n:n*2, 1], 'o-', label = 'transformed', color='blue')
+    for i in range(len(words)):
+        plt.annotate(words[i], xy=(m[i+n][0], m[i+n][1]), xytext=(-5, 10), textcoords='offset points', color='blue', size=10)
+    plt.plot(m[n*2:n*3, 0], m[n*2:n*3, 1], 'o-', label = 'perturbed', color='green')
+    for i in range(len(words)):
+        plt.annotate(words[i], xy=(m[i+2*n][0], m[i+2*n][1]), xytext=(-5, 10), textcoords='offset points', color='green', size=10)
+    plt.show()
 
 def read_params(d):
     value = 0.0
@@ -103,6 +116,23 @@ def find_stretch(control,perturbed):
     minkey = min(all_stretches, key=all_stretches.get)
     return minkey, all_stretches[minkey]
     
+def find_rotation(control,perturbed):
+    all_rotations = {}
+    best_rotations = []
+    minkey = 0.0
+    ndims = control.shape[1]
+
+    for d1 in range(ndims-1):
+        d2 = d1+1
+        for theta in range(0,360,10):
+            rotated = rotate(control,d1,d2,theta)
+            d = matrix_distance(rotated, perturbed)
+            all_rotations[theta] = d
+        minkey = min(all_rotations, key=all_rotations.get)
+        best_rotations.append(minkey)
+        control = rotate(control,d1,d2,minkey)
+    return best_rotations, all_rotations[minkey], control
+
 
 if __name__=="__main__":
     args = docopt(__doc__, version='Speakers in vats, noise 0.1')
@@ -124,7 +154,14 @@ if __name__=="__main__":
         nn_vectors = get_speaker_data(vatdir,control_neighbourhood,value,locus)
         perturbed = center(np.array(nn_vectors))
         print(matrix_distance(control, perturbed))
-        best_stretch,distance = find_stretch(control,perturbed)
-        print("BEST STRETCH:",best_stretch,distance)
+        #best_stretch,distance = find_stretch(control,perturbed)
+        #print("BEST STRETCH:",best_stretch,distance)
+        #transformed = stretch(control,best_stretch)
+        best_rotations, distance, transformed = find_rotation(control,perturbed)
+        print(best_rotations)
+        print(distance)
 
-
+        concatenated = np.concatenate((control, transformed, perturbed))    
+        concatenated_2d = compute_PCA(concatenated,2)
+        make_figure(concatenated_2d, control_neighbourhood)
+        
