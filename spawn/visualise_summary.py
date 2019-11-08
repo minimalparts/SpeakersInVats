@@ -1,6 +1,18 @@
+"""Visualise all vats in a folder
+
+Usage:
+vat.py --dir=<dirname>  [--locus=<n>]
+vat.py --version
+
+Options:
+-h --help     Show this screen.
+--version     Show version.
+"""
+
 import sys
 import shutil
 import numpy as np
+from docopt import docopt
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from itertools import combinations
@@ -41,12 +53,12 @@ def draw_matrices(matrices):
         plt.plot(m[:,0],m[:,1],'o',color=cmap(color))
     plt.show()
 
-def draw_correlations(rsa_to_control, corr_to_men, values, loci):
+def draw_correlations(vatdir, rsa_to_control, corr_to_men, values, loci, locus=None):
     fig,ax = plt.subplots()
     cmap = get_cmap()
     color=0
     for i in range(len(rsa_to_control)):
-        if loci[i] != '9': #or float(values[i]) > 1.3:
+        if locus and loci[i] != locus: #or float(values[i]) > 1.3:
             continue
         if loci[0] == None:
             color+=1
@@ -57,7 +69,8 @@ def draw_correlations(rsa_to_control, corr_to_men, values, loci):
         plt.annotate(values[i], xy=(rsa_to_control[i][0], corr_to_men[i][0]), xytext=(0, 10), textcoords='offset points', color='black', size=10)
     ax.set_xlabel('RSA to control')
     ax.set_ylabel('Spearman to MEN')
-    plt.show()
+    filename = vatdir+".summary."+locus+".png" if locus else vatdir+".summary.png"
+    plt.savefig(join("./img",filename))
         
 
 def get_speaker_data(vatdir):
@@ -83,8 +96,16 @@ def get_speaker_data(vatdir):
         shutil.rmtree(vat)
     return speakers, rsa_to_control, corr_to_men, values, loci
 
-vatdir = sys.argv[1]
 
-speakers, rsa_to_control, corr_to_men, values, loci = get_speaker_data(vatdir)
-draw_correlations(rsa_to_control, corr_to_men, values, loci)
+if __name__=="__main__":
+    args = docopt(__doc__, version='Speakers in vats, noise 0.1')
+    print(args)
+
+    vatdir = args["--dir"]
+    if args["--locus"]:
+       locus = args["--locus"]
+    else:
+        locus = None
+    speakers, rsa_to_control, corr_to_men, values, loci = get_speaker_data(vatdir)
+    draw_correlations(vatdir, rsa_to_control, corr_to_men, values, loci, locus)
 
