@@ -1,9 +1,9 @@
 """Create speakers by adding noise to a reference matrix
 
 Usage:
-vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value>
-vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> --locus=<n>
-vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> --num=<n> --locus=<n>
+vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> [--dir=<dirname>]
+vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> --locus=<n> [--dir=<dirname>]
+vat.py --in=<file> --dim=<n> --num_speakers=<n> --perturbation=<type> --v=<param_value> --num=<n> --locus=<n> [--dir=<dirname>]
 vat.py --version
 
 Options:
@@ -125,8 +125,10 @@ if __name__=="__main__":
         param = float(args["--v"])
     else:
         param = args["--v"]
-
-    vat_dir = "./allvats"
+    if args["--dir"]:
+        vat_dir = join("./",args["--dir"])
+    else:
+        vat_dir = "./allvats"
     if not os.path.exists(vat_dir):
         os.makedirs(vat_dir)
 
