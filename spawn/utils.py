@@ -1,12 +1,13 @@
 import random
 from sklearn.metrics import pairwise_distances
+from sklearn.metrics import mean_squared_error
 from scipy.spatial.distance import cosine
 from sklearn.decomposition import PCA
 from sklearn.decomposition import TruncatedSVD
 from sklearn import preprocessing
 from scipy import linalg as LA
 from os.path import join
-from math import log
+from math import log,sqrt
 import numpy as np
 
 def is_number(s):
@@ -38,6 +39,9 @@ def get_rand_ints_with_sum(length,total):
             position = 0
     return v
 
+def average(l):
+    return sum(l) / len(l)
+
 def centroid(vectors):
     '''vectors is a list of np arrays'''
     m = np.array(vectors)
@@ -46,6 +50,8 @@ def centroid(vectors):
 def matrix_distance(m1,m2):
     return np.sum(np.absolute(m1 - m2))
 
+def rmse(m1,m2):
+    return sqrt(mean_squared_error(m1,m2))
 
 def percentile(freqs,n):
     percentiles = []

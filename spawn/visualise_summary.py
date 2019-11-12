@@ -1,6 +1,18 @@
+"""Visualise all vats in a folder
+
+Usage:
+vat.py --dir=<dirname>  [--locus=<n>]
+vat.py --version
+
+Options:
+-h --help     Show this screen.
+--version     Show version.
+"""
+
 import sys
 import shutil
 import numpy as np
+from docopt import docopt
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from itertools import combinations
@@ -31,7 +43,9 @@ def read_params(d):
             value = l.split()[1]
         if l[:8] == '--locus ':
             locus = l.split()[1]
-    return value, locus
+        if l[:15] == '--num_speakers ':
+            num_speakers=int(l.split()[1])
+    return value, locus, num_speakers
 
 def draw_matrices(matrices):
     cmap = get_cmap()
@@ -41,23 +55,28 @@ def draw_matrices(matrices):
         plt.plot(m[:,0],m[:,1],'o',color=cmap(color))
     plt.show()
 
-def draw_correlations(rsa_to_control, corr_to_men, values, loci):
+def draw_correlations(vatdir, rsa_to_control, corr_to_men, values, num_speakers, loci, locus=None):
     fig,ax = plt.subplots()
     cmap = get_cmap()
     color=0
+    print(len(rsa_to_control),num_speakers)
     for i in range(len(rsa_to_control)):
-        if loci[i] != '9': #or float(values[i]) > 1.3:
+        if locus and loci[i] != locus: #or float(values[i]) > 1.3:
             continue
         if loci[0] == None:
             color+=1
             plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(color))
         else:
-            plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(int(loci[i])))
-            
-        plt.annotate(values[i], xy=(rsa_to_control[i][0], corr_to_men[i][0]), xytext=(0, 10), textcoords='offset points', color='black', size=10)
+            #plt.plot(rsa_to_control[i],corr_to_men[i],'o',ms=5,color=cmap(int(loci[i])))
+            plt.plot(rsa_to_control[i],corr_to_men[i],'o',ms=5,color='dodgerblue')
+
+        avgx = sum(rsa_to_control[i]) / num_speakers    #Get average to put annotation in the middle of cluster
+        avgy = sum(corr_to_men[i]) / num_speakers
+        plt.annotate(values[i], xy=(avgx, avgy), xytext=(0, 0), textcoords='offset points', color='black', fontweight='bold', size=12)
     ax.set_xlabel('RSA to control')
     ax.set_ylabel('Spearman to MEN')
-    plt.show()
+    filename = vatdir+".summary."+locus+".png" if locus else vatdir+".summary.png"
+    plt.savefig(join("./img",filename))
         
 
 def get_speaker_data(vatdir):
@@ -72,7 +91,7 @@ def get_speaker_data(vatdir):
     
         unpack(sfile,vatdir)
         vat = sfile.replace(".zip","")
-        value,locus = read_params(vat)
+        value,locus, num_speakers = read_params(vat)
         values.append(value)
         loci.append(locus)
 
@@ -81,10 +100,19 @@ def get_speaker_data(vatdir):
         corr_to_men.append(np.load(join(vat,"corr.men.npy")))
  
         shutil.rmtree(vat)
-    return speakers, rsa_to_control, corr_to_men, values, loci
+    return speakers, rsa_to_control, corr_to_men, values, loci, num_speakers
 
-vatdir = sys.argv[1]
 
-speakers, rsa_to_control, corr_to_men, values, loci = get_speaker_data(vatdir)
-draw_correlations(rsa_to_control, corr_to_men, values, loci)
+if __name__=="__main__":
+    args = docopt(__doc__, version='Speakers in vats, noise 0.1')
+    print(args)
+
+    vatdir = args["--dir"]
+    if args["--locus"]:
+       locus = args["--locus"]
+    else:
+        locus = None
+    speakers, rsa_to_control, corr_to_men, values, loci, num_speakers = get_speaker_data(vatdir)
+    draw_correlations(vatdir, rsa_to_control, corr_to_men, values, num_speakers, loci, locus)
+
 

@@ -1,7 +1,7 @@
 """Visualise nearest neighbours
 
 Usage:
-visualise_nns.py --control=<file> --dir=<d> --v=<param_value> --locus=<n>
+visualise_nns.py --control=<file> --dir=<d> --v=<param_value> --locus=<n> --num_words=<n>  --nns=<n>
 visualise_nns.py --version
 
 Options:
@@ -17,9 +17,9 @@ from docopt import docopt
 from os import listdir
 from os.path import isfile, join
 import matplotlib.pyplot as plt
-from utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, matrix_distance, get_vocab_freqs, percentile
+from utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, rmse, get_vocab_freqs, percentile, average
 from evals import RSA, compute_cosines, compute_nearest_neighbours
-from transformations import center, stretch, rotate
+from transformations import center, scale, rotate, find_svd_rotation
 
 np.random.seed(0)
 
@@ -31,13 +31,18 @@ def make_figure(m, words):
     plt.plot(m[:n, 0], m[:n, 1], 'o-', label = 'control', color='red')
     for i in range(len(words)):
         plt.annotate(words[i], xy=(m[i][0], m[i][1]), xytext=(-5, 10), textcoords='offset points', color='red', size=10)
+    plt.savefig("img/"+words[0]+"_control.png")
+    plt.clf()
     plt.plot(m[n:n*2, 0], m[n:n*2, 1], 'o-', label = 'transformed', color='blue')
     for i in range(len(words)):
         plt.annotate(words[i], xy=(m[i+n][0], m[i+n][1]), xytext=(-5, 10), textcoords='offset points', color='blue', size=10)
+    plt.savefig("img/"+words[0]+"_transformed.png")
+    plt.clf()
     plt.plot(m[n*2:n*3, 0], m[n*2:n*3, 1], 'o-', label = 'perturbed', color='green')
     for i in range(len(words)):
         plt.annotate(words[i], xy=(m[i+2*n][0], m[i+2*n][1]), xytext=(-5, 10), textcoords='offset points', color='green', size=10)
-    plt.show()
+    plt.savefig("img/"+words[0]+"_perturbed.png")
+    plt.clf()
 
 def read_params(d):
     value = 0.0
@@ -58,19 +63,18 @@ def process_matrix(m,dim):
     m = compute_PCA(m,dim)
     return m
 
-def nns(m,vocab,word):
+def nns(m,vocab,word,num_nns):
     cosines = compute_cosines(m)
     word_indices = {}
     for i in range(len(vocab)):
         word_indices[i] = vocab[i]
-    nns = compute_nearest_neighbours(cosines,word_indices,vocab.index(word))
+    nns = compute_nearest_neighbours(cosines,word_indices,vocab.index(word),num_nns)
     return [nn[0] for nn in nns]
 
-def get_reference_data(m,vocab,word):
+def get_reference_data(m,vocab,word,num_nns):
     print("Processing control speaker...")
-    print(m.shape)
     m = process_matrix(m,40)
-    neighbourhood = nns(m,vocab,word)
+    neighbourhood = nns(m,vocab,word,num_nns)
     indices = [vocab.index(w) for w in neighbourhood]
     nn_vectors = [m[i] for i in indices] 
     return neighbourhood, nn_vectors
@@ -86,6 +90,7 @@ def get_speaker_data(vatdir,neighbourhood,v,l):
         if value == v and locus == l:
             print("Processing",sfile,"...")
             m,vocab = read_external_vectors(join(vat,"s0.dm"))
+            #m = process_matrix(m,40)
             indices = [vocab.index(w) for w in neighbourhood]
             nn_vectors = [m[i] for i in indices] 
             shutil.rmtree(vat)
@@ -93,45 +98,29 @@ def get_speaker_data(vatdir,neighbourhood,v,l):
         shutil.rmtree(vat)
     return nn_vectors
 
-def select_words(m,vocab,locus):
+def select_words(m,vocab,locus,n):
     locus = int(locus)
     freqs = np.array(get_vocab_freqs(m,vocab))
     indices = percentile(freqs,locus)
-    indices = [random.choice(indices) for c in range(5)] 
+    indices = [random.choice(indices) for c in range(n)] 
     return [vocab[i] for i in indices]
 
-def find_stretch(control,perturbed):
-    all_stretches = {}
+def find_scale(control,perturbed):
+    all_scales = {}
 
     for i in range(1,50):
         j = 1+i/50
-        d = matrix_distance(stretch(control,j), perturbed)
-        all_stretches[j] = d
+        d = rmse(scale(control,j), perturbed)
+        all_scales[j] = d
 
     for i in range(1,50):
         k = 1-i/50
-        d = matrix_distance(stretch(control,k), perturbed)
-        all_stretches[k] = d
+        d = rmse(scale(control,k), perturbed)
+        all_scales[k] = d
 
-    minkey = min(all_stretches, key=all_stretches.get)
-    return minkey, all_stretches[minkey]
+    minkey = min(all_scales, key=all_scales.get)
+    return minkey, all_scales[minkey]
     
-def find_rotation(control,perturbed):
-    all_rotations = {}
-    best_rotations = []
-    minkey = 0.0
-    ndims = control.shape[1]
-
-    for d1 in range(ndims-1):
-        d2 = d1+1
-        for theta in range(0,360,10):
-            rotated = rotate(control,d1,d2,theta)
-            d = matrix_distance(rotated, perturbed)
-            all_rotations[theta] = d
-        minkey = min(all_rotations, key=all_rotations.get)
-        best_rotations.append(minkey)
-        control = rotate(control,d1,d2,minkey)
-    return best_rotations, all_rotations[minkey], control
 
 
 if __name__=="__main__":
@@ -142,26 +131,41 @@ if __name__=="__main__":
     value = args["--v"]
     locus = args["--locus"]
     control_file = args["--control"]
+    num_nns = int(args["--nns"])
+    num_words = int(args["--num_words"])
 
     ref,vocab = read_external_vectors(control_file)
-    words = select_words(ref,vocab,locus)
+    words = select_words(ref,vocab,locus,num_words)
     print(words)
 
+    avg_perturbed_control = []
+    avg_perturbed_rotation = []
+    avg_perturbed_transformed = []
+
     for word in words:
-        control_neighbourhood, control_nn_vectors = get_reference_data(ref,vocab,word)
+        control_neighbourhood, control_nn_vectors = get_reference_data(ref,vocab,word,num_nns)
         print(control_neighbourhood)
         control = center(np.array(control_nn_vectors))
         nn_vectors = get_speaker_data(vatdir,control_neighbourhood,value,locus)
         perturbed = center(np.array(nn_vectors))
-        print(matrix_distance(control, perturbed))
-        #best_stretch,distance = find_stretch(control,perturbed)
-        #print("BEST STRETCH:",best_stretch,distance)
-        #transformed = stretch(control,best_stretch)
-        best_rotations, distance, transformed = find_rotation(control,perturbed)
-        print(best_rotations)
-        print(distance)
+        avg_perturbed_control.append(rmse(control,perturbed))
 
-        concatenated = np.concatenate((control, transformed, perturbed))    
-        concatenated_2d = compute_PCA(concatenated,2)
-        make_figure(concatenated_2d, control_neighbourhood)
+        '''Rotation'''
+        transformed = find_svd_rotation(control,perturbed)
+        avg_perturbed_rotation.append(rmse(transformed,perturbed))
+
+        '''Scaling'''
+        best_scale,distance = find_scale(transformed,perturbed)
+        print("BEST SCALING FACTOR:",best_scale,distance)
+        transformed = scale(transformed,best_scale)
+        avg_perturbed_transformed.append(rmse(transformed,perturbed))
+
+
+        #concatenated = np.concatenate((control, transformed, perturbed))    
+        #concatenated_2d = compute_PCA(concatenated,2)
+        #make_figure(concatenated_2d, control_neighbourhood)
         
+
+print(avg_perturbed_control, average(avg_perturbed_control))
+print(avg_perturbed_rotation, average(avg_perturbed_rotation))
+print(avg_perturbed_transformed, average(avg_perturbed_transformed))

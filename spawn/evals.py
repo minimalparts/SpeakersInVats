@@ -35,8 +35,8 @@ def RSA(m1_cos,m2_cos):
 def compute_cosines(m):
     return 1-pairwise_distances(m, metric="cosine")
 
-def compute_nearest_neighbours(cosines,word_indices,i):
+def compute_nearest_neighbours(cosines,word_indices,i,num_nns):
     word_cos = np.array(cosines[i])
     ranking = np.argsort(-word_cos)
-    neighbours = [(word_indices[n], round(word_cos[n],5)) for n in ranking][:5]
+    neighbours = [(word_indices[n], round(word_cos[n],5)) for n in ranking][:num_nns+1]
     return neighbours
