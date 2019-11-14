@@ -18,8 +18,8 @@ def rotate(m,d1,d2,theta):
     rm = np.identity(dim)
     rm[d1][d1] = cos(theta)
     rm[d2][d2] = cos(theta)
-    rm[d1][d2] = sin(theta)
-    rm[d2][d1] = -sin(theta)
+    rm[d1][d2] = -sin(theta)
+    rm[d2][d1] = sin(theta)
     return np.matmul(m,rm)
    
 def sum_outer_product(m1, m2):

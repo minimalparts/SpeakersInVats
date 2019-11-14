@@ -99,19 +99,25 @@ def find_scale(control,perturbed):
 
 def isolation(m,vocab,neighs):
     iso = 0.0
+    #print(neighs)
     for nn in neighs:
         neighbourhood, cosines = nns(m,vocab,nn,len(neighs)+1)
+        #print(nn,neighbourhood,cosines)
         for w in neighbourhood:
             if w not in neighs:
+                #print(nn,w,cosines[neighbourhood.index(w)])
                 iso+=cosines[neighbourhood.index(w)]
+                #print(iso)
                 break
-    return 1 - iso / len(neighs)
+    avg_iso = 1 - iso / len(neighs)
+    #print(avg_iso)
+    return avg_iso
         
 
 
 def write_entry(nns,men,rsa,rmse1,rmse2,rmse3,scalef,wordfreq,density,isolation):
     neigh = ' '.join(n for n in nns)
-    print(nns[0],"\tMEN:",men,"\tRSA",rsa,"\tRMSE ORIG:",rmse1,"\tRMSE R:",rmse2,"\tRMSE FINAL:",rmse3,"\tSCALING:",scalef,"\tFREQ:",int(wordfreq),"\tDENSITY:",density,"\tISOLATION:",isolation,"\tNEIGH:",neigh)
+    print(nns[0],"\tMEN:",men,"\tRSA:",rsa,"\tRMSE ORIG:",rmse1,"\tRMSE R:",rmse2,"\tRMSE FINAL:",rmse3,"\tSCALING:",scalef,"\tFREQ:",int(wordfreq),"\tDENSITY:",density,"\tISOLATION:",isolation,"\tNEIGH:",neigh)
 
 
 if __name__=="__main__":
