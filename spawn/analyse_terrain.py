@@ -80,10 +80,18 @@ if __name__=="__main__":
     mapfile = args["--map"]
     d,locus,value,terrain = read_map(mapfile)
 
-    print(rmse_avgs(terrain))
+    avg_reds, avg_finals = rmse_avgs(terrain)
+    
+    print("AVG RMSE REDUCTIONS:")
+    for k,v in avg_reds.items():
+        print(k,v)
+
+    print("\nAVG RMSE FINALS:")
+    for k,v in avg_finals.items():
+        print(k,v)
 
     X,Y = get_xy(terrain,"DENSITY","RMSE RED")
-    print("DENSITY / RMSE REDUCTION:",spearmanr(X,Y),"\n")
+    print("\nDENSITY / RMSE REDUCTION:",spearmanr(X,Y),"\n")
     
     X,Y = get_xy(terrain,"ISOLATION","RMSE RED")
     print("ISOLATION / RMSE REDUCTION:",spearmanr(X,Y),"\n")

@@ -21,8 +21,8 @@ def mk_attractor():
     o = np.array([0.0, 0.0])
     a = np.array([0.8, 0.0])
     b = np.array([0.4, 0.8])
-    c = np.array([0.4, 0.4])
-    return np.array([o,a,b,c])
+    #c = np.array([0.4, 0.4])
+    return np.array([o,a,b])
 
 
 def plot(X,color,ms,linked=False):
@@ -34,7 +34,11 @@ def plot(X,color,ms,linked=False):
 
 def linear(p,lambd):
     '''Scaling with lambda< 1 decreases all frequencies.'''
-    return lambd * p
+    if coinflip():
+        scale = 1 + lambd
+    else:
+        scale = 1 - lambd
+    return scale * p
 
 def rotation(p,rho,sign):
     '''Rotations have the effect of increasing/decreasing frequencies -

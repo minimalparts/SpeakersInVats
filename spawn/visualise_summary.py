@@ -1,8 +1,8 @@
 """Visualise all vats in a folder
 
 Usage:
-vat.py --dir=<dirname>  [--locus=<n>]
-vat.py --version
+visualise_summary.py --dir=<dirname> [--locus=<n>]
+visualise_summary.py --version
 
 Options:
 -h --help     Show this screen.
@@ -60,17 +60,22 @@ def draw_correlations(vatdir, rsa_to_control, corr_to_men, values, loci, locus=N
     for i in range(len(rsa_to_control)):
         if locus and loci[i] != locus: #or float(values[i]) > 1.3:
             continue
-        if loci[0] == None:
+        if locus == None:
             color+=1
-            plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(color))
+            #plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(color))
+            #plt.plot(rsa_to_control[i],corr_to_men[i],'o',color='darorchid')
+            #plt.plot(rsa_to_control[i],corr_to_men[i],'o',color='dodgerblue')
+            #plt.plot(rsa_to_control[i],corr_to_men[i],'o',color='darkmagenta')
+            plt.plot(rsa_to_control[i],corr_to_men[i],'o',color='red')
         else:
-            plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(int(loci[i])))
+            #plt.plot(rsa_to_control[i],corr_to_men[i],'o',color=cmap(int(loci[i])))
+            plt.plot(rsa_to_control[i],corr_to_men[i],'o',color='darkmagenta')
             
-        plt.annotate(values[i], xy=(rsa_to_control[i][0], corr_to_men[i][0]), xytext=(0, 10), textcoords='offset points', color='black', size=10)
+        plt.annotate(values[i], xy=(rsa_to_control[i][0], corr_to_men[i][0]), xytext=(0, 10), textcoords='offset points', color='black', size=10, weight='bold')
     ax.set_xlabel('RSA to control')
     ax.set_ylabel('Spearman to MEN')
     filename = vatdir+".summary."+locus+".png" if locus else vatdir+".summary.png"
-    plt.savefig(join("./img",filename))
+    plt.savefig(join("./img",filename.replace("results/","")))
         
 
 def get_speaker_data(vatdir):

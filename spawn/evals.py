@@ -33,7 +33,7 @@ def RSA(m1_cos,m2_cos):
     return spearmanr(top_m1,top_m2)
 
 def compute_cosines(m):
-    return 1-pairwise_distances(m, metric="cosine")
+    return 1-pairwise_distances(m, metric="cosine") / 2 #Dividing by 2 to avoid negative values. See https://stackoverflow.com/questions/37454785/how-to-handle-negative-values-of-cosine-similarities
 
 def compute_nearest_neighbours(cosines,word_indices,i,num_nns):
     word_cos = np.array(cosines[i])

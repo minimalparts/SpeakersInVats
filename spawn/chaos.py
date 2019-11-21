@@ -1,7 +1,7 @@
-"""Observe effect of initial conditions
+"""Visualise 2D IFS
 
 Usage:
-chaos.py --control=<file> --word=<s> --rotate=<param_value> --scale=<param_value> --nns=<n>
+chaos.py --control=<file> --nns=<n> --coinbias=<n> [--translate=<n>] [--print_zeros]
 chaos.py --version
 
 Options:
@@ -9,31 +9,18 @@ Options:
 --version     Show version.
 """
 
-import sys
-import shutil
-import numpy as np
 import random
+import numpy as np
 from docopt import docopt
-from os import listdir
-from os.path import isfile, join
-import matplotlib.pyplot as plt
-from utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, rmse, get_vocab_freqs, percentile, average
-from evals import RSA, compute_cosines, compute_nearest_neighbours
-from transformations import center, scale, rotate, find_svd_rotation
+from math import cos,sin
+from transformations import rotate, center
+from evals import compute_men_spearman, RSA, compute_cosines, compute_nearest_neighbours
+from utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, rmse
 
-np.random.seed(0)
 
-def make_figure(m, num_nns):
-    num_nns+=1
-    n = int(m.shape[0] / num_nns)
-    print(n)
-    plt.plot(m[:num_nns, 0], m[:num_nns, 1], 'o', label = 'control', color='red', ms=10)
-    #for i in range(1,int(n/2)):
-    for i in range(1,n):
-        plt.plot(m[num_nns*i:num_nns*i+num_nns, 0], m[num_nns*i:num_nns*i+num_nns, 1], 'o', color='blue')
-    #for i in range(int(n/2)+1,n):
-    #    plt.plot(m[num_nns*i:num_nns*i+num_nns, 0], m[num_nns*i:num_nns*i+num_nns, 1], 'o', color='green')
-    plt.show()
+def mk_attractor(control_file):
+    m, vocab = read_external_vectors(control_file)
+    return m, vocab
 
 def process_matrix(m,dim):
     m = ppmi(m)
@@ -41,71 +28,92 @@ def process_matrix(m,dim):
     m = compute_PCA(m,dim)
     return m
 
-def nns(m,vocab,word,num_nns):
-    cosines = compute_cosines(m)
-    word_indices = {}
-    for i in range(len(vocab)):
-        word_indices[i] = vocab[i]
-    nns = compute_nearest_neighbours(cosines,word_indices,vocab.index(word),num_nns)
-    return [nn[0] for nn in nns]
+def linear(p,lambd):
+    '''Scaling with lambda< 1 decreases all frequencies.'''
+    #print("Scaling...")
+    p = lambd * p
+    p = np.array([int(i) for i in p])
+    return p
 
-def get_reference_data(m,vocab,word,num_nns):
-    print("Processing control speaker...")
-    m = process_matrix(m,40)
-    neighbourhood = nns(m,vocab,word,num_nns)
-    indices = [vocab.index(w) for w in neighbourhood]
-    nn_vectors = [m[i] for i in indices] 
-    return neighbourhood, nn_vectors
+def translation(p,att,theta):
+    #print("Translating...")
+    for i in range(len(p)):
+        t = theta * (p[i] - att[i])
+        p[i] = p[i] - t
+    p = np.array([int(i) for i in p])
+    return p
+
+def rotation(v,rho):
+    #print("Rotating...")
+    v = np.array([v])
+    for i in range(len(v[0])-1):
+        vt = rotate(v,i,i+1,rho)
+        if vt[0][i] < 0 or vt[0][i+1] < 0:
+            vt = rotate(v,i,i+1,-rho)
+    v = np.array([int(i) for i in v[0]])
+    return v
+
+def find_zero_cells(m):
+    return np.argwhere(m == 0)
+
+def print_perturbed_zeros(A,B):
+    orig_zero_cells = set([tuple(p) for p in find_zero_cells(A)])
+    spawned_zero_cells = set([tuple(p) for p in find_zero_cells(B)])
+    perturbed_zeros = list(orig_zero_cells - spawned_zero_cells)
+   
+    print("NUM ORIG ZEROS:",len(orig_zero_cells), "NUM SPAWNED ZEROS:",len(spawned_zero_cells), "NUM PERTURBED ZEROS:",len(perturbed_zeros))
+    some_perturbed_zeros = random.sample(perturbed_zeros,20)
+    for z in some_perturbed_zeros:
+         print(vocab[z[0]],vocab[z[1]],B[z[0]][z[1]])
 
 
-    
+def coinflip(prob):
+    if random.random() < prob:
+        return True
+    else:
+        return False
 
 
 if __name__=="__main__":
-    args = docopt(__doc__, version='Speakers in vats, chaos 0.1')
+    args = docopt(__doc__, version='Speakers in vats, IFS 0.1')
     print(args)
 
     control_file = args["--control"]
-    word = args["--word"]
-    vr = int(args["--rotate"])
-    vs = float(args["--scale"])
-    num_nns = int(args["--nns"])
+    nns = int(args["--nns"])
+    bias = float(args["--coinbias"])
+    if args["--translate"]:
+        theta = float(args["--translate"])
 
-    ref,vocab = read_external_vectors(control_file)
-    control_neighbourhood, control_nn_vectors = get_reference_data(ref,vocab,word,num_nns)
-    control = center(np.array(control_nn_vectors))
-    control2 = control.copy()
-    noise = np.random.normal(0,0.001,control2.shape)
-    control2+=noise
-    print(control_neighbourhood)
-    print(control[0][:10])
-    print(control2[0][:10])
-
-    transformed = control.copy()
-    transformed2 = control2.copy()
-    concatenated = control.copy()
-    concatenated2 = control.copy()
-
-    for k in range(5):
-        for i in range(40-1):
-  
-            '''Rotation'''
-            transformed = rotate(transformed, i, i+1, vr)
-            transformed2 = rotate(transformed2, i, i+1, vr)
-            print("ROT:",rmse(transformed,control))
-            print("ROT2:",rmse(transformed2,control))
-            print("1/2:",rmse(transformed,transformed2))
-
-            '''Scaling'''
-            transformed = scale(transformed,vs)
-            transformed2 = scale(transformed2,vs)
-            print("SCALE:",rmse(transformed,control))
-            print("SCALE2:",rmse(transformed2,control))
-            print("1/2:",rmse(transformed,transformed2))
-        
-            concatenated = np.concatenate((concatenated, transformed))    
-            concatenated2 = np.concatenate((concatenated2, transformed2))    
+    A, vocab = mk_attractor(control_file)
+    A_processed = process_matrix(A,40)
+    A_cosines = compute_cosines(A_processed)
+    B = A.copy()
     
-    concatenated = np.concatenate((concatenated, concatenated2))       
-    concatenated_2d = compute_PCA(concatenated,2)
-    make_figure(concatenated_2d, num_nns)
+    for i in range(len(A)):
+        p = A.copy()[i]    #copy important -- otherwise changing A itself while changing p!
+        while True:
+            #print(i,vocab[i],compute_nearest_neighbours(A_cosines,vocab,i,10))
+            idx = (-A_cosines[i]).argsort()[:nns]
+            att = np.random.choice(idx)
+            print(vocab[i],"-->",vocab[att],A_cosines[i][att])
+            p = translation(p,A[att],theta)
+            if coinflip(bias):
+                B[i] = p
+                break
+
+    A_processed = process_matrix(A,40)
+    A_cosines = compute_cosines(A_processed)
+    B_processed = process_matrix(B,40)
+    B_cosines = compute_cosines(B_processed)
+
+    print("SPEARMAN CONTROL:",compute_men_spearman(A_processed,vocab))
+    print("SPEARMAN SPAWNED:",compute_men_spearman(B_processed,vocab))
+    print("RSA",RSA(A_cosines,B_cosines))
+    print("RMSE RAW SPACES:",rmse(A,B))
+    print("RMSE LATENT SPACES:",rmse(A_processed,B_processed))
+    print("CONTROL NNS:",compute_nearest_neighbours(A_cosines,vocab,vocab.index('dog'),5))
+    print("SPAWNED NNS:",compute_nearest_neighbours(B_cosines,vocab,vocab.index('dog'),5))
+    print("\n")
+
+    if (args["--print_zeros"]):
+        print_perturbed_zeros(A,B)

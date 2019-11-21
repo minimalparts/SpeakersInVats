@@ -5,9 +5,9 @@ from utils import get_zero_positions, get_rand_freq, get_rand_ints_with_sum
 
 def get_zero_perturbation(original,param,frozen):
     new_vec = original.copy()
-    add = np.random.choice([0,1],p=[1-param,param])
     for i in range(len(new_vec)):
-        if i not in frozen:
+        if i not in frozen and new_vec[i] == 0:
+            add = np.random.choice([0,1],p=[1-param,param])
             new_vec[i] = max(0,new_vec[i]+add)
     return np.array(new_vec)
 
@@ -25,28 +25,8 @@ def get_exponential_perturbation(original,param,frozen):
     new_exponential = original.copy()
     for i in range(len(new_exponential)):
         if i not in frozen:
-            new_exponential[i] = int(math.pow(original[i],param)*10)
+            new_exponential[i] = int(math.pow(original[i],param))
     return np.array(new_exponential)
-
-def get_random_perturbation(original, reference, freqs,frozen,zp=False):
-    if zp:
-        zeros = get_zero_positions(reference)
-        frozen = list(set(zeros+frozen))
-    if len(frozen) == len(original):
-        return original
-    min_freq = sum(original[i] for i in frozen)
-    random_freq = get_rand_freq(freqs,min_freq)  #We want a frequency at least equal to the frozen components in the original
-    filler_freq = random_freq - min_freq
-    filler_length = len(original) - len(frozen) #We want a random vector with enough positions to fill the non-frozen components of the original
-    filler_vec = get_rand_ints_with_sum(filler_length,filler_freq)
-    new_vec = original.copy()
-    c = 0
-    for i in range(len(new_vec)):
-        if i not in frozen:
-            new_vec[i] = filler_vec[c]
-            c+=1
-    #print(new_vec[:10], sum(new_vec))
-    return np.array(new_vec)
 
 def get_shuffled_perturbation(original, reference, frozen, zp=False):
     if zp:

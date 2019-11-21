@@ -116,7 +116,7 @@ def ppmi(m):
 
 def compute_PCA(m,dim):
     m -= np.mean(m, axis = 0)
-    pca = PCA(n_components=dim)
+    pca = PCA(n_components=dim, svd_solver='arpack')
     pca.fit(m)
     return pca.transform(m)
 
