@@ -1,7 +1,7 @@
 """Visualise 2D IFS
 
 Usage:
-IFS-demo.py --iter=<n> --sample=<n> --translate=<n>
+IFS-demo.py --iter=<n> --sample=<n> --translate=<n> [--local]
 IFS-demo.py --version
 
 Options:
@@ -58,7 +58,7 @@ def mk_color_points_dict(colors):
 
 def plot_color_points(points,colors):
     for c,p in points.items():
-        plot(np.array(p),colors[c],2)
+        plot(np.array(p),colors[c],3)
 
 def run_attractor(P,ind,theta,iterations,colors):
     points = mk_color_points_dict(colors)
@@ -79,13 +79,17 @@ def run_attractor(P,ind,theta,iterations,colors):
     return points
 
 
-def sample_subcommunity(points,nns,color):
-    distances = compute_euclidian(np.array(points))
-    sample = random.choice(range(len(points)))
-    sample_dis = np.array(distances[sample])
-    ranking = np.argsort(sample_dis)[:nns]
-    community = [points[i] for i in ranking]
-    plot(np.array(community),color,5,linked=False)
+def sample_subcommunity(points,nns,color,local=False):
+    similarities = compute_euclidian(np.array(points))
+    if not local:
+        sample = np.random.choice(range(len(points)),nns)
+    else:
+        random_point = random.choice(range(len(points)))
+        plt.plot(points[random_point][0], points[random_point][1], 'x', label = 'xy', color='black', ms=8)
+        sample_dis = np.array(similarities[random_point])
+        sample = np.argsort(-sample_dis)[:nns]
+    community = [points[i] for i in sample]
+    plot(np.array(community),color,3,linked=False)
     c = centroid(np.array(community))
     plt.plot(c[0], c[1], 'o', label = 'xy', color='black', ms=15)
     return community
@@ -95,23 +99,27 @@ if __name__=="__main__":
     args = docopt(__doc__, version='Speakers in vats, IFS 0.1')
     print(args)
 
-    plt.figure()
+    plt.figure(figsize=(14, 6))
     theta = float(args["--translate"])
     iterations = int(args["--iter"])
     sample_n = int(args["--sample"])
+    if args["--local"]:
+        local_sampling = True
+    else:
+        local_sampling = False
     cmap=get_cmap(iterations)
 
-    plt.subplot(121)
     A = mk_attractor()
-    plot_attractor(A)
 
+    plt.subplot(121)
     colors=['dodgerblue','green','red','darkorchid']
     all_points = mk_color_points_dict(colors)
     for i in range(A.shape[0]):
         points = run_attractor(A,i,theta,iterations,colors)
         all_points[i].extend(points[i])
+    plot_attractor(A)
     
     plt.subplot(122)
     for i in range(A.shape[0]):
-        sample_subcommunity(all_points[i],sample_n,colors[i])
+        sample_subcommunity(all_points[i],sample_n,colors[i],local=local_sampling)
     plt.show()
