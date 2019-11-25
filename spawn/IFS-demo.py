@@ -1,7 +1,7 @@
 """Visualise 2D IFS
 
 Usage:
-IFS-demo.py --iter=<n> [--scale=<n>] [--translate=<n>] [--rotate=<n>]
+IFS-demo.py --iter=<n> --sample=<n> --translate=<n>
 IFS-demo.py --version
 
 Options:
@@ -14,107 +14,104 @@ import numpy as np
 from docopt import docopt
 from math import cos,sin
 import matplotlib.pyplot as plt
-from transformations import rotate
+from utils import centroid
+from evals import compute_euclidian
 
+def get_cmap(i):
+    vals = np.linspace(0,1,i)
+    np.random.shuffle(vals)
+    cmap = plt.cm.colors.ListedColormap(plt.cm.brg(vals))
+    return cmap
 
 def mk_attractor():
     o = np.array([0.0, 0.0])
-    a = np.array([0.8, 0.0])
-    b = np.array([0.4, 0.8])
-    #c = np.array([0.4, 0.4])
-    return np.array([o,a,b])
-
+    a = np.array([0.7, 0.0])
+    b = np.array([0.5, 0.7])
+    m = np.array([0.3, 0.3])
+    return np.array([o,a,b,m])
 
 def plot(X,color,ms,linked=False):
     if linked:
+        X = np.vstack([X,X[0]])
         plt.plot(X[:,0], X[:,1], 'o-', label = 'xy', color=color, ms=ms)
     else:
         plt.plot(X[:,0], X[:,1], 'o', label = 'xy', color=color, ms=ms)
 
-
-def linear(p,lambd):
-    '''Scaling with lambda< 1 decreases all frequencies.'''
-    if coinflip():
-        scale = 1 + lambd
-    else:
-        scale = 1 - lambd
-    return scale * p
-
-def rotation(p,rho,sign):
-    '''Rotations have the effect of increasing/decreasing frequencies -
-    they will shift zeros as well as having some effect on collocations.'''
-    d1 = 0
-    d2 = 1
-    rho = rho * sign
-    rm = np.identity(2)
-    rm[d1][d1] = cos(rho)
-    rm[d2][d2] = cos(rho)
-    rm[d1][d2] = -sin(rho)
-    rm[d2][d1] = sin(rho)
-    return np.matmul(p,rm)
-
 def translate(p,att,theta):
     t1 = theta * (p[0] - att[0])
     t2 = theta * (p[1] - att[1])
-    #print("P,t1,t2",p,t1,t2)
+    #print("OLDP",p,"ATT",att,"DIFF",t1,t2)
     p[0] = p[0] - t1
     p[1] = p[1] - t2
     #print("NEWP",p)
-    return np.array([p])
+    return p
 
-def coinflip():
-    if random.randint(0,1) == 1:
-        return True
-    else:
-        return False
+def plot_attractor(P):
+    plt.plot(P[:,0], P[:,1], 'o', label = 'xy', color='black', ms=15)
 
-def get_sign(f):
-    if f < 0:
-        return -1
-    else:
-        return 1
+
+def mk_color_points_dict(colors):
+    points = {}
+    for i in range(len(colors)):
+        points[i] = []
+    return points
+
+def plot_color_points(points,colors):
+    for c,p in points.items():
+        plot(np.array(p),colors[c],2)
+
+def run_attractor(P,ind,theta,iterations,colors):
+    points = mk_color_points_dict(colors)
+    att_similarities = compute_euclidian(P)
+
+    p = P[ind].copy()
+    for i in range(iterations):
+        itheta = theta
+        #probs = att_similarities[ind] / sum(att_similarities[ind])
+        #att = np.random.choice([i for i in range(P.shape[0])],1,p=probs)[0]
+        att = random.choice(range(P.shape[0]))
+        #itheta = theta * att_similarities[ind][att]
+        #print(ind,"-->",att,itheta)
+        p = translate(p,P[att],itheta)
+        points[att].append(p.copy())
+
+    plot_color_points(points,colors)
+    return points
+
+
+def sample_subcommunity(points,nns,color):
+    distances = compute_euclidian(np.array(points))
+    sample = random.choice(range(len(points)))
+    sample_dis = np.array(distances[sample])
+    ranking = np.argsort(sample_dis)[:nns]
+    community = [points[i] for i in ranking]
+    plot(np.array(community),color,5,linked=False)
+    c = centroid(np.array(community))
+    plt.plot(c[0], c[1], 'o', label = 'xy', color='black', ms=15)
+    return community
+
 
 if __name__=="__main__":
     args = docopt(__doc__, version='Speakers in vats, IFS 0.1')
     print(args)
 
-    if args["--scale"]:
-        lambd = float(args["--scale"])
-    if args["--translate"]:
-        theta = float(args["--translate"])
-    if args["--rotate"]:
-        rho = float(args["--rotate"])
+    plt.figure()
+    theta = float(args["--translate"])
     iterations = int(args["--iter"])
+    sample_n = int(args["--sample"])
+    cmap=get_cmap(iterations)
 
-    P = mk_attractor()
-    plot(P,'red',20,linked=False)
+    plt.subplot(121)
+    A = mk_attractor()
+    plot_attractor(A)
 
-    att = np.random.choice(range(P.shape[0]))
-    p = np.array([P[att]])
-    points = [p[0]]
-    for i in range(iterations):
-        if args["--rotate"] and coinflip():
-            att = np.random.choice(range(P.shape[0]))
-            sign = get_sign(p[0][0]-P[att][0]) 
-            pt = rotation(p,rho,sign)
-            if pt[0][0] > 0 and pt[0][1] > 0: 
-                p = pt
-            else:
-                p = rotation(p,rho,-sign)
-            points.append(p[0])
-        if args["--translate"] and coinflip():
-            att = np.random.choice(range(P.shape[0]))
-            p = translate(p[0],P[att],theta)
-            points.append(p[0])
-        if args["--scale"] and coinflip():
-            p = linear(p,lambd)
-            points.append(p[0])
-        if coinflip():
-            if len(points) != 0:
-                plot(np.array(points),'blue',2)
-                points.clear()
-            att = np.random.choice(range(P.shape[0]))
-            p = np.array([P[att]])
-            points.append(p[0])
-    plot(np.array(points),'blue',2)
+    colors=['dodgerblue','green','red','darkorchid']
+    all_points = mk_color_points_dict(colors)
+    for i in range(A.shape[0]):
+        points = run_attractor(A,i,theta,iterations,colors)
+        all_points[i].extend(points[i])
+    
+    plt.subplot(122)
+    for i in range(A.shape[0]):
+        sample_subcommunity(all_points[i],sample_n,colors[i])
     plt.show()
