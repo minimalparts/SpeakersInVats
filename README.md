@@ -41,7 +41,7 @@ Four different pertubation types can be applied to the control space, all define
 
 An example usage is:
 
-   python3 vat.py --in=data/enwiki-20181120.ss.toks.mincount-100.win-2.MEN.txt --dim=40 --num_speaker=10 --perturbation=exp --v=0.2 
+    python3 vat.py --in=data/enwiki-20181120.ss.toks.mincount-100.win-2.MEN.txt --dim=40 --num_speaker=10 --perturbation=exp --v=0.2 
 
 The output will be something like:
 
