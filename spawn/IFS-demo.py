@@ -1,7 +1,7 @@
 """Visualise 2D IFS
 
 Usage:
-IFS-demo.py --iter=<n> --sample=<n> --translate=<n> [--local]
+IFS-demo.py --iter=<n> --sample=<n> --translate=<n>
 IFS-demo.py --version
 
 Options:
@@ -99,27 +99,27 @@ if __name__=="__main__":
     args = docopt(__doc__, version='Speakers in vats, IFS 0.1')
     print(args)
 
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(20,5))
     theta = float(args["--translate"])
     iterations = int(args["--iter"])
     sample_n = int(args["--sample"])
-    if args["--local"]:
-        local_sampling = True
-    else:
-        local_sampling = False
     cmap=get_cmap(iterations)
 
     A = mk_attractor()
 
-    plt.subplot(121)
-    colors=['dodgerblue','green','red','darkorchid']
+    plt.subplot(131)
+    colors=['maroon','gold','red','olivedrab']
     all_points = mk_color_points_dict(colors)
     for i in range(A.shape[0]):
         points = run_attractor(A,i,theta,iterations,colors)
         all_points[i].extend(points[i])
     plot_attractor(A)
     
-    plt.subplot(122)
+    plt.subplot(132)
     for i in range(A.shape[0]):
-        sample_subcommunity(all_points[i],sample_n,colors[i],local=local_sampling)
+        sample_subcommunity(all_points[i],sample_n,colors[i],local=False)
+    
+    plt.subplot(133)
+    for i in range(A.shape[0]):
+        sample_subcommunity(all_points[i],sample_n,colors[i],local=True)
     plt.show()

@@ -1,8 +1,8 @@
-"""Visualise nearest neighbours
+"""Model perturbations with rotations and scaling
 
 Usage:
-visualise_nns.py --control=<file> --dir=<d> --v=<param_value> --locus=<n> --num_words=<n>  --nns=<n>
-visualise_nns.py --version
+model_perturbations.py --control=<file> --dir=<d> --v=<param_value> --locus=<n> --num_words=<n>  --nns=<n> [--viz]
+model_perturbations.py --version
 
 Options:
 -h --help     Show this screen.
@@ -17,9 +17,9 @@ from docopt import docopt
 from os import listdir
 from os.path import isfile, join
 import matplotlib.pyplot as plt
-from utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, rmse, get_vocab_freqs, percentile, average
-from evals import RSA, compute_cosines, compute_nearest_neighbours
-from transformations import center, scale, rotate, find_svd_rotation
+from utils.utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, rmse, get_vocab_freqs, percentile, average
+from utils.evals import RSA, compute_cosines, compute_nearest_neighbours
+from utils.transformations import center, scale, rotate, find_svd_rotation
 
 np.random.seed(0)
 
@@ -72,7 +72,7 @@ def nns(m,vocab,word,num_nns):
     return [nn[0] for nn in nns]
 
 def get_reference_data(m,vocab,word,num_nns):
-    print("Processing control speaker...")
+    #print("Processing control speaker...")
     m = process_matrix(m,40)
     neighbourhood = nns(m,vocab,word,num_nns)
     indices = [vocab.index(w) for w in neighbourhood]
@@ -124,19 +124,20 @@ def find_scale(control,perturbed):
 
 
 if __name__=="__main__":
-    args = docopt(__doc__, version='Speakers in vats, noise 0.1')
+    args = docopt(__doc__, version='Semantic chaos, model_perturbations 0.1')
     print(args)
 
     vatdir = args["--dir"]
     value = args["--v"]
     locus = args["--locus"]
+    viz = args["--viz"]
     control_file = args["--control"]
     num_nns = int(args["--nns"])
     num_words = int(args["--num_words"])
 
     ref,vocab = read_external_vectors(control_file)
     words = select_words(ref,vocab,locus,num_words)
-    print(words)
+    print("\nTEST WORDS:",words,"\n")
 
     avg_perturbed_control = []
     avg_perturbed_rotation = []
@@ -144,28 +145,29 @@ if __name__=="__main__":
 
     for word in words:
         control_neighbourhood, control_nn_vectors = get_reference_data(ref,vocab,word,num_nns)
-        print(control_neighbourhood)
+        print("NEIGHBOURHOOD:",control_neighbourhood)
         control = center(np.array(control_nn_vectors))
         nn_vectors = get_speaker_data(vatdir,control_neighbourhood,value,locus)
         perturbed = center(np.array(nn_vectors))
         avg_perturbed_control.append(rmse(control,perturbed))
 
         '''Rotation'''
+        print("ROTATING")
         transformed = find_svd_rotation(control,perturbed)
         avg_perturbed_rotation.append(rmse(transformed,perturbed))
 
         '''Scaling'''
         best_scale,distance = find_scale(transformed,perturbed)
-        print("BEST SCALING FACTOR:",best_scale,distance)
+        print("SCALING (FACTOR:",best_scale,distance,")")
         transformed = scale(transformed,best_scale)
         avg_perturbed_transformed.append(rmse(transformed,perturbed))
 
-
-        #concatenated = np.concatenate((control, transformed, perturbed))    
-        #concatenated_2d = compute_PCA(concatenated,2)
-        #make_figure(concatenated_2d, control_neighbourhood)
+        if viz:
+            concatenated = np.concatenate((control, transformed, perturbed))    
+            concatenated_2d = compute_PCA(concatenated,2)
+            make_figure(concatenated_2d, control_neighbourhood)
         
 
-print(avg_perturbed_control, average(avg_perturbed_control))
-print(avg_perturbed_rotation, average(avg_perturbed_rotation))
-print(avg_perturbed_transformed, average(avg_perturbed_transformed))
+print("AVG RMSE, CONTROL - PERTURBED:", average(avg_perturbed_control))
+print("AVG RMSE, CONTROL - ROTATED:", average(avg_perturbed_rotation))
+print("AVG RMSE, CONTROL - ROTATED+SCALED:", average(avg_perturbed_transformed))

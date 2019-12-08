@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from itertools import combinations
 from os import listdir
 from os.path import isfile, join
+from scipy.stats import spearmanr
 from utils.utils import read_external_vectors, compute_PCA
 from utils.evals import RSA, compute_cosines
 
@@ -38,7 +39,7 @@ def read_params(d):
     f = open(join(d,"settings.txt"))
     for l in f:
         l = l.rstrip('\n')
-        print(l)
+        #print(l)
         if l[:4] == '--v ':
             value = l.split()[1]
         if l[:8] == '--locus ':
@@ -58,7 +59,7 @@ def draw_correlations(vatdir, rsa_to_control, corr_to_men, values, loci, locus=N
     cmap = get_cmap()
     color=0
     for i in range(len(rsa_to_control)):
-        if locus and loci[i] != locus: #or float(values[i]) > 1.3:
+        if locus and loci[i] != locus:
             continue
         if locus == None:
             color+=1
@@ -77,6 +78,13 @@ def draw_correlations(vatdir, rsa_to_control, corr_to_men, values, loci, locus=N
     filename = vatdir+".summary."+locus+".png" if locus else vatdir+".summary.png"
     plt.savefig(join("./img",filename.replace("vats/","")))
         
+def average_scores_per_param(d, loci, locus=None):
+    avgs = []
+    for i in range(len(d)):
+        if locus and loci[i] != locus:
+            continue
+        avgs.append(np.sum(d[i]))
+    return avgs
 
 def get_speaker_data(vatdir):
     speakers = []
@@ -114,4 +122,6 @@ if __name__=="__main__":
         locus = None
     speakers, rsa_to_control, corr_to_men, values, loci = get_speaker_data(vatdir)
     draw_correlations(vatdir, rsa_to_control, corr_to_men, values, loci, locus)
-
+    avg_rsa = average_scores_per_param(rsa_to_control, loci, locus=locus)
+    avg_men = average_scores_per_param(corr_to_men, loci, locus=locus)
+    print(spearmanr(avg_rsa,avg_men))

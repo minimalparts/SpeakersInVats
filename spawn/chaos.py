@@ -66,6 +66,18 @@ def print_perturbed_zeros(A,B):
     for z in some_perturbed_zeros:
          print(vocab[z[0]],vocab[z[1]],B[z[0]][z[1]])
 
+def mk_community(A,vocab):
+    C = {}
+    for i in range(len(vocab)):
+        C[i] = [A[i]]
+    return C
+
+def sample_community(C):
+    sample = []
+    for i in range(len(C)):
+        ind = random.randint(0,len(C[i])-1)
+        sample.append(C[i][ind])
+    return np.array(sample)
 
 def coinflip(prob):
     if random.random() < prob:
@@ -88,6 +100,7 @@ if __name__=="__main__":
     A_processed = process_matrix(A,40)
     A_cosines = compute_cosines(A_processed)
     B = A.copy()
+    C = mk_community(A, vocab)
     
     for i in range(len(A)):
         p = A.copy()[i]    #copy important -- otherwise changing A itself while changing p!
@@ -97,6 +110,7 @@ if __name__=="__main__":
             att = np.random.choice(idx)
             print(vocab[i],"-->",vocab[att],A_cosines[i][att])
             p = translation(p,A[att],theta)
+            C[i].append(p)
             if coinflip(bias):
                 B[i] = p
                 break
@@ -117,3 +131,13 @@ if __name__=="__main__":
 
     if (args["--print_zeros"]):
         print_perturbed_zeros(A,B)
+
+    for i in range(10):
+        print("SAMPLED SPEAKER",i)
+        S = sample_community(C)
+        S_processed = process_matrix(S,40)
+        S_cosines = compute_cosines(S_processed)
+        print("SPEARMAN SPAWNED:",compute_men_spearman(S_processed,vocab))
+        print("RSA",RSA(A_cosines,S_cosines))
+
+
