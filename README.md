@@ -57,3 +57,13 @@ The output will be something like:
     SPEARMAN MEN REF 0.6716123142755714
     SPEARMAN MEN SPAWNED 0.6155885995528726
 
+
+## Visualisation
+
+It is possible to visualise the effect of a particular perturbation for different parameter values. The following will visualise all spawned speakers from the collocation perturbation, applied to the entire vocabulary (assuming that the perturbation has been run and its output saved in the *vats* directory under the name *global-exp-arpack*.)
+
+    python3 visualise_summary.py --dir=vats/global-exp-arpack/
+
+The same can be run to investigate perturbations at a particular decile of the data. For instance, the following will visualise collocation perturbation applied to the lowest 10% of the data (assuming that the perturbation has been run on separate deciles and the output saved in the *vats/local-exp-arpack* directory.)
+
+    python3 visualise_summary.py --dir=vats/local-exp-arpack/ --locus=0
