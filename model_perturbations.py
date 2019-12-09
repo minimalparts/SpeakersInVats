@@ -152,13 +152,13 @@ if __name__=="__main__":
         avg_perturbed_control.append(rmse(control,perturbed))
 
         '''Rotation'''
-        print("ROTATING")
+        print("ROTATING...")
         transformed = find_svd_rotation(control,perturbed)
         avg_perturbed_rotation.append(rmse(transformed,perturbed))
 
         '''Scaling'''
         best_scale,distance = find_scale(transformed,perturbed)
-        print("SCALING (FACTOR:",best_scale,distance,")")
+        print("SCALING... (FACTOR:",best_scale,")")
         transformed = scale(transformed,best_scale)
         avg_perturbed_transformed.append(rmse(transformed,perturbed))
 
@@ -169,5 +169,5 @@ if __name__=="__main__":
         
 
 print("AVG RMSE, CONTROL - PERTURBED:", average(avg_perturbed_control))
-print("AVG RMSE, CONTROL - ROTATED:", average(avg_perturbed_rotation))
-print("AVG RMSE, CONTROL - ROTATED+SCALED:", average(avg_perturbed_transformed))
+print("AVG RMSE, ROTATED - PERTURBED:", average(avg_perturbed_rotation))
+print("AVG RMSE, ROTATED+SCALED - PERTURBED:", average(avg_perturbed_transformed))
