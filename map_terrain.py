@@ -16,9 +16,9 @@ import random
 from docopt import docopt
 from os import listdir
 from os.path import isfile, join
-from utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, rmse, get_vocab_freqs, percentile, average, get_vocab_freqs, compute_cosines
-from evals import compute_men_spearman, RSA, compute_cosines, compute_nearest_neighbours
-from transformations import center, scale, rotate, find_svd_rotation
+from utils.utils import read_external_vectors, ppmi, normalise_l2, compute_PCA, rmse, get_vocab_freqs, percentile, average, get_vocab_freqs, compute_cosines
+from utils.evals import compute_men_spearman, RSA, compute_cosines, compute_nearest_neighbours
+from utils.transformations import center, scale, rotate, find_svd_rotation
 
 np.random.seed(0)
 
@@ -121,7 +121,7 @@ def write_entry(nns,men,rsa,rmse1,rmse2,rmse3,scalef,wordfreq,density,isolation)
 
 
 if __name__=="__main__":
-    args = docopt(__doc__, version='Speakers in vats, noise 0.1')
+    args = docopt(__doc__, version='Semantic chaos, map_terrain 0.1')
     print(args)
 
     vatdir = args["--dir"]
