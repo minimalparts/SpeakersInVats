@@ -91,5 +91,4 @@ The output of the above might be
     AVG RMSE, ROTATED - PERTURBED: 0.030520423738435453
     AVG RMSE, ROTATED+SCALED - PERTURBED: 0.02817152011726653
 
-That is, *work* and *man* are chosen as the two words to test. Their neighbourhoods in the control space are printed out. Rotation and scaling is applied. In the end, the average RMSE is given between 
-1) the control and perturbed space; 2) the rotated control space and the perturbed space; 3) the rotated and scaled control space and the perturbed space. We see that the RMSE decreases, giving a measure of the extent to which rotation and scaling model the effect of the given perturbation.
+That is, *work* and *man* are chosen as the two words to test. Their neighbourhoods in the control space are printed out. Rotation and scaling is applied. In the end, the average RMSE is given between a) the control and perturbed space; b) the rotated control space and the perturbed space; c) the rotated and scaled control space and the perturbed space. We see that the RMSE decreases, giving a measure of the extent to which rotation and scaling model the effect of the given perturbation.
