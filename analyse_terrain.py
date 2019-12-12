@@ -52,6 +52,7 @@ def make_figure(X,Y):
 def read_map(mapfile):
     terrain = []
     d,locus,value="","",""
+    men = None
     mf = open(mapfile,'r')
     for l in mf:
         l = l.rstrip('\n')
@@ -67,28 +68,31 @@ def read_map(mapfile):
            for f in fields[1:]:
                f = f.split(':')
                terrain_entry[f[0]] = f[1].strip()
+           if men == None:
+               men = terrain_entry["MEN"]
            terrain_entry["NUM NN"] = len(terrain_entry["NEIGH"].split())
            terrain_entry["RMSE RED"] = str(float(terrain_entry["RMSE ORIG"]) / float(terrain_entry["RMSE FINAL"]))
            #print(fields[0],terrain_entry["RMSE ORIG"],terrain_entry["RMSE FINAL"],terrain_entry["RMSE RED"],terrain_entry["DENSITY"])
            terrain.append(terrain_entry)
-    return d, locus, value, terrain 
+    return d, locus, value, terrain, men
 
 
 if __name__=="__main__":
-    args = docopt(__doc__, version='Speakers in vats, noise 0.1')
+    args = docopt(__doc__, version='Semantic chaos, analyse_terrain 0.1')
 
     mapfile = args["--map"]
-    d,locus,value,terrain = read_map(mapfile)
+    d,locus,value,terrain,men = read_map(mapfile)
 
     avg_reds, avg_finals = rmse_avgs(terrain)
+    print("MEN SCORE:",men)
     
     print("AVG RMSE REDUCTIONS:")
-    for k,v in avg_reds.items():
-        print(k,v)
+    for k,v in sorted(avg_reds.items()):
+        print(k,round(v,3))
 
     print("\nAVG RMSE FINALS:")
-    for k,v in avg_finals.items():
-        print(k,v)
+    for k,v in sorted(avg_finals.items()):
+        print(k,round(v,3))
 
     X,Y = get_xy(terrain,"DENSITY","RMSE RED")
     print("\nDENSITY / RMSE REDUCTION:",spearmanr(X,Y),"\n")

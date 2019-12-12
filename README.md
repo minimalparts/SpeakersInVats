@@ -98,8 +98,13 @@ The output of the above might be
 
 That is, *work* and *man* are chosen as the two words to test. Their neighbourhoods in the control space are printed out. Rotation and scaling is applied. In the end, the average RMSE is given between a) the control and perturbed space; b) the rotated control space and the perturbed space; c) the rotated and scaled control space and the perturbed space. We see that the RMSE decreases, giving a measure of the extent to which rotation and scaling model the effect of the given perturbation.
 
+The script also saves a visualisation of the transformation in the *img/* directory.
+
+
 
 ### Drawing a map of the entire space
+
+In order to map the configuration of the entire perturbed space, use *map_terrain.py*. The script considers each word in the vocabulary and its neighbourhood, as computed from the control space. It returns various pieces of information, including the MEN and RSA scores for the entire perturbed space, the frequency of the word under consideration, the density of the neighbourhood, its isolation, and as before, the RMSE between a) control and perturbed neighbourhoods; b) rotated and perturbed neighbourhoods; c) rotated+scaled and perturbed neighbourhoods.
 
     python3 map_terrain.py --control=data/enwiki-20181120.ss.toks.mincount-100.win-2.MEN.txt --dir=vats/local-exp-arpack/ --locus=0 --v=0.5 > logs/results.map.terrain.exp.arpack.locus.0.v.0.5.txt
 
@@ -108,5 +113,8 @@ The output follows the pattern below:
     television      MEN: 0.67       RSA: 0.8583654329625688         RMSE ORIG: 0.029520848024291606         
     RMSE R: 0.001029651233910406    RMSE FINAL: 0.0009945382975317385       SCALING: 0.98   FREQ: 90349     
     DENSITY: 0.9608773939808712     ISOLATION: 0.80974      NEIGH: television tv movie
+
+Given each word in the vocabulary, the values of interest are computed five times, for different sizes of neighbourhoods. This can be adjusted in the script itself.
+
 
 
